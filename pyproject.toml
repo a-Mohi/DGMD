@@ -1,0 +1,6 @@
+[tool.basedpyright]
+reportUnusedImport = false
+reportMissingTypeArgument = false
+reportUnknownMemberType = false
+reportUnknownParameterType = false
+reportUnknownVariableType = false
