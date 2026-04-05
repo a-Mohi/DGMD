@@ -8,7 +8,7 @@ from collections import defaultdict
 
 
 
-class MidogCMC(Dataset):
+class MiCMC(Dataset):
     def __init__(self, root_dir, sqlite_path, transforms=None):
         self.root_dir = Path(root_dir)
         self.transforms = transforms
@@ -22,7 +22,7 @@ class MidogCMC(Dataset):
 
         # slides_uid -> full image path
         self.slides = {
-            uid: f"{self.root_dir}/{self.filename}" for uid, filename in slides_data
+            uid: f"{self.root_dir}/{filename}" for uid, filename in slides_data
         }
 
         self.cursor.execute("SELECT uid, name from Classes;")
@@ -47,11 +47,14 @@ class MidogCMC(Dataset):
         coords_by_ann = defaultdict(list)
 
         for annoId, x, y in coord_data:
-            self.coords_by_ann[annoId] = (x, y)
+            coords_by_ann[annoId] = (x, y)
         
         self.samples = defaultdict(list)
 
         for anno_id, slide_uid, class_id in ann_data:
+            if class_id != 2 or class_id != 1:
+                continue
+
             if anno_id not in coords_by_ann:
                 continue
             sample = {
@@ -68,13 +71,15 @@ class MidogCMC(Dataset):
                     "slide_path": self.slides[slide_uid],
                     "instances": [sample]
                 }
+        
+        self.samples = [v for _,v in self.samples.items()]
             
-            print(f"Loaded {len(self.ann_data)} annotations.")
+        print(f"Loaded {len(ann_data)} annotations.")
         
-        def __len__(self):
-            return len(self.samples)
-        
-        def __getitem__(self, idx):
-            image_data = self.samples[idx]
-            return image_data
+    def __len__(self):
+        return len(self.samples)
+    
+    def __getitem__(self, idx):
+        image_data = self.samples[idx]
+        return image_data
 

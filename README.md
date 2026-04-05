@@ -11,3 +11,5 @@ Loss (focal / MSE on heatmap)
 Inference (sliding window + merge)
    ↓
 detection
+   ↓
+amoga is a little gayboy

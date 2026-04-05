@@ -81,6 +81,9 @@ class MiDeSec(Dataset):
             reader = csv.reader(infile)
 
             for row in reader:
+                if row == '':
+                    continue
+                row = [i for i in row if i]
                 coords = list(map(float, row))
                 x1, y1, x2, y2 = self.polygon_to_bbox(coords)
 
