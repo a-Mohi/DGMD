@@ -1,6 +1,6 @@
-# Segmentation Detection Backend
+# Mitosis Detection Backend
 
-FastAPI backend for the image segmentation + detection dashboard.
+FastAPI backend for the image Mitosis detection dashboard.
 
 ## Setup
 

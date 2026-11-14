@@ -13,6 +13,7 @@ class MiCMC(Dataset):
         self.root_dir = Path(root_dir)
         self.transforms = transforms
         self.sqlite_path = sqlite_path
+        self.mapping = {2:1,1:2}
         self.source = "CMC"
         self.conn = sqlite3.connect(self.sqlite_path)
         self.cursor = self.conn.cursor()
@@ -50,15 +51,15 @@ class MiCMC(Dataset):
             coords_by_ann[annoId] = (x, y)
         
         self.samples = defaultdict(list)
-
+        ann_count = 0
         for anno_id, slide_uid, class_id in ann_data:
-            if class_id != 2 or class_id != 1:
+            if class_id != 2 and class_id != 1:
                 continue
 
             if anno_id not in coords_by_ann:
                 continue
             sample = {
-                "label": class_id,
+                "label": self.mapping[class_id],
                 "class_name": self.classes.get(class_id, None),
                 "points": coords_by_ann[anno_id]
             }
@@ -71,10 +72,11 @@ class MiCMC(Dataset):
                     "slide_path": self.slides[slide_uid],
                     "instances": [sample]
                 }
-        
+            ann_count+=1
+
         self.samples = [v for _,v in self.samples.items()]
             
-        print(f"Loaded {len(ann_data)} annotations.")
+        print(f"Loaded {ann_count} annotations.")
         
     def __len__(self):
         return len(self.samples)

@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { BASE_URL } from "../App";
 
-export default function UploadPanel({ uploadedImage, setUploadedImage }) {
+export default function UploadPanel({ uploadedImage, setUploadedImage, onUploadSuccess }) {
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -24,13 +24,14 @@ export default function UploadPanel({ uploadedImage, setUploadedImage }) {
         if (!res.ok) throw new Error(`Server responded ${res.status}`);
         setSuccess(`Uploaded: ${file.name}`);
         setUploadedImage(URL.createObjectURL(file));
+        onUploadSuccess?.();
       } catch (e) {
         setError(e.message || "Upload failed");
       } finally {
         setUploading(false);
       }
     },
-    [setUploadedImage]
+    [setUploadedImage, onUploadSuccess]
   );
 
   const onDrop = useCallback(

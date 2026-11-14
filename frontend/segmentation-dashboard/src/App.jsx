@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import GridDisplay from "./components/GridDisplay";
 import UploadPanel from "./components/UploadPanel";
 import ModelSelector from "./components/ModelSelector";
@@ -16,13 +16,43 @@ export default function App() {
   const [detectionError, setDetectionError] = useState("");
   const [detectionStarted, setDetectionStarted] = useState(false);
   const [patchCount, setPatchCount] = useState(0);
+  const gridPollRef = useRef(null);
 
   // Fetch grid dimensions once on mount
   useEffect(() => {
     fetch(`${BASE_URL}/get-progress-dim`)
       .then((r) => r.json())
       .then((data) => setGridDim({ x: data.x, y: data.y }))
-      .catch(() => {});
+      .catch(() => { });
+  }, []);
+
+  // Called by UploadPanel once the server confirms the upload.
+  // Polls /get-progress-dim every 300ms until the backend returns a
+  // non-zero grid (the sampler computes it right after saving the file).
+  const handleUploadSuccess = useCallback(() => {
+    // Clear any previous poll
+    if (gridPollRef.current) clearInterval(gridPollRef.current);
+
+    // Reset stale grid while we wait
+    setGridDim({ x: 0, y: 0 });
+
+    gridPollRef.current = setInterval(() => {
+      fetch(`${BASE_URL}/get-progress-dim`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.x > 0 && data.y > 0) {
+            setGridDim({ x: data.x, y: data.y });
+            clearInterval(gridPollRef.current);
+            gridPollRef.current = null;
+          }
+        })
+        .catch(() => { });
+    }, 300);
+  }, []);
+
+  // Clean up grid poll on unmount
+  useEffect(() => () => {
+    if (gridPollRef.current) clearInterval(gridPollRef.current);
   }, []);
 
   // Poll /get-status every 500ms while detection is running
@@ -40,10 +70,10 @@ export default function App() {
             fetch(`${BASE_URL}/get-patch-count`)
               .then((r) => r.json())
               .then((d) => setPatchCount(d.count ?? d.patch_count ?? 0))
-              .catch(() => {});
+              .catch(() => { });
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }, 500);
     return () => clearInterval(interval);
   }, [detectionStarted, runComplete]);
@@ -79,33 +109,32 @@ export default function App() {
           <span className="w-2 h-2 rounded-full bg-green-500" />
         </div>
         <h1 className="text-xs tracking-[0.25em] uppercase text-gray-400">
-          Segmentation · Detection · Dashboard
+          Mitosis · Detection · Dashboard
         </h1>
         <div className="ml-auto flex items-center gap-2">
           <span
-            className={`w-2 h-2 rounded-full ${
-              detectionStarted && !runComplete
-                ? "bg-yellow-400 animate-pulse"
-                : runComplete
+            className={`w-2 h-2 rounded-full ${detectionStarted && !runComplete
+              ? "bg-yellow-400 animate-pulse"
+              : runComplete
                 ? "bg-green-400"
                 : "bg-gray-600"
-            }`}
+              }`}
           />
           <span className="text-[10px] text-gray-500 uppercase tracking-widest">
             {detectionStarted && !runComplete
               ? "Running"
               : runComplete
-              ? "Complete"
-              : "Idle"}
+                ? "Complete"
+                : "Idle"}
           </span>
         </div>
       </header>
 
       {/* Main Grid */}
       <div className="grid grid-cols-2 gap-4">
-        {/* TOP LEFT: Segmentation Grid */}
+        {/* TOP LEFT: Detection Grid */}
         <div className="panel">
-          <PanelLabel>Segmentation Grid</PanelLabel>
+          <PanelLabel>Detection Grid</PanelLabel>
           <GridDisplay
             gridDim={gridDim}
             status={status}
@@ -120,6 +149,7 @@ export default function App() {
             <UploadPanel
               uploadedImage={uploadedImage}
               setUploadedImage={setUploadedImage}
+              onUploadSuccess={handleUploadSuccess}
             />
           </div>
 

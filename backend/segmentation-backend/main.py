@@ -13,7 +13,7 @@ from fastapi.responses import FileResponse, JSONResponse
 
 # ── App setup ────────────────────────────────────────────────────────────────
 
-app = FastAPI(title="Segmentation Detection API")
+app = FastAPI(title="Mitosis Detection API")
 
 app.add_middleware(
     CORSMiddleware,
